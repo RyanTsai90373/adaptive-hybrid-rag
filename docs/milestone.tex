@@ -13,7 +13,6 @@
 
 \usepackage{changes}
 \usepackage{booktabs}
-\definechangesauthor[name={Group 18}, color=blue]{g18}
 
 \begin{document}
 
@@ -48,7 +47,7 @@ not started.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}llp{3.3cm}@{}}
+\begin{tabular}{@{}p{2.5cm}p{1.5cm}p{3.4cm}@{}}
 \toprule
 \textbf{Component} & \textbf{Status} & \textbf{Notes} \\
 \midrule
@@ -108,7 +107,7 @@ expected.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}llp{2.6cm}@{}}
+\begin{tabular}{@{}p{2.3cm}p{2.0cm}p{3.1cm}@{}}
 \toprule
 \textbf{Member} & \textbf{Role} & \textbf{Completed work} \\
 \midrule
@@ -309,26 +308,26 @@ specified precisely.
 
 \paragraph{Components reused}
 \begin{itemize}
-\item \deleted[id=g18]{BM25 implementation e.g.\ \texttt{rank-bm25}}
-      \added[id=g18]{BM25 implemented by us directly, Python standard library
+\item \deleted{BM25 implementation e.g.\ \texttt{rank-bm25}}
+      \added{BM25 implemented by us directly, Python standard library
       only, $k_1 = 1.5$, $b = 0.75$}
-\item \deleted[id=g18]{pretrained model for dense retrieval e.g.\
-      \texttt{sentence-transformers/all-MiniLM-L6-v2}}
-      \added[id=g18]{dense encoder \texttt{BAAI/bge-m3}, 1024 dimensions,
+\item \deleted{pretrained model for dense retrieval e.g.\
+      \texttt{sentence-transformers/\allowbreak all-MiniLM-L6-v2}}
+      \added{dense encoder \texttt{BAAI/bge-m3}, 1024 dimensions,
       8{,}192-token limit}
-\item \deleted[id=g18]{similarity search e.g.\ FAISS}
-      \added[id=g18]{FAISS \texttt{IndexFlatIP} over normalized vectors, exact
+\item \deleted{similarity search e.g.\ FAISS}
+      \added{FAISS \texttt{IndexFlatIP} over normalized vectors, exact
       cosine search, no approximation}
-\item \deleted[id=g18]{cross-encoder e.g.\ e.g.\
-      \texttt{cross-encoder/ms-marco-MiniLM-L6-v2}}
-      \added[id=g18]{cross-encoder \texttt{cross-encoder/ms-marco-MiniLM-L6-v2},
+\item \deleted{cross-encoder e.g.\
+      \texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2}}
+      \added{cross-encoder \texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2},
       applied to a fixed candidate pool of the top 50 fused chunks}
-\item \deleted[id=g18]{LLM for answer generation e.g.\ OpenAI API using a fixed
+\item \deleted{LLM for answer generation e.g.\ OpenAI API using a fixed
       ChatGPT model}
-      \added[id=g18]{answer generation by \texttt{qwen3:8b} from the Qwen3
+      \added{answer generation by \texttt{qwen3:8b} from the Qwen3
       family, served locally with Ollama, temperature 0, one fixed prompt across
       all configurations}
-\item \added[id=g18]{compute platform: one Apple Silicon laptop, 32~GB unified
+\item \added{compute platform: one Apple Silicon laptop, 32~GB unified
       memory, PyTorch Metal backend. Embedding the 50{,}189-chunk corpus takes
       37.6~minutes and the cross-encoder is a 22M-parameter model, so GPU
       embedding and reranking do not require PACE. PACE-ICE remains our fallback
@@ -336,14 +335,14 @@ specified precisely.
 \end{itemize}
 
 \paragraph{Chunking and retrieval setup}
-\added[id=g18]{Documents are split into chunks of 180 words with 30 words of
+\added{Documents are split into chunks of 180 words with 30 words of
 overlap, and a chunk never crosses a source paragraph boundary, so each chunk
 belongs to exactly one paragraph and carries its identifier. Retrieval searches
 the entire split; a question's parent paper is provenance, not a candidate
 filter.}
 
 \paragraph{Mapping retrieved chunks to gold evidence}
-\added[id=g18]{QASPER annotates gold evidence at paragraph granularity. For
+\added{QASPER annotates gold evidence at paragraph granularity. For
 Recall@$K$ and MRR we fold each retrieved chunk onto its source paragraph,
 keeping that paragraph's best rank, and score the resulting deduplicated
 paragraph ranking against the gold paragraph set, so $K$ counts distinct
@@ -351,9 +350,9 @@ paragraphs. Overlapping chunks of one gold paragraph count once. We additionally
 report the same cutoffs at chunk depth as a cross-check.}
 
 \paragraph{Evaluation set}
-\deleted[id=g18]{For QASPER, we plan to evaluate approximately 1,000 questions
+\deleted{For QASPER, we plan to evaluate approximately 1,000 questions
 sampled from the designated test set using a fixed random seed.}
-\added[id=g18]{QASPER v0.3 is publicly released as train and dev only, with no
+\added{QASPER v0.3 is publicly released as train and dev only, with no
 evidence-annotated test split. We therefore develop on all 2{,}593 train
 questions and hold out all 1{,}005 dev questions for final evaluation after the
 adaptive thresholds are frozen. Within a split we score every question whose
@@ -363,8 +362,8 @@ mutually exclusive exclusion reason for every remaining question. No random
 sampling is involved, so no seed is needed.}
 
 \paragraph{Metrics}
-\deleted[id=g18]{We will report Recall@1, Recall@5, and Recall@10.}
-\added[id=g18]{We report Recall@1, @5, @10, @20, and @100, plus MRR@10 and hit
+\deleted{We will report Recall@1, Recall@5, and Recall@10.}
+\added{We report Recall@1, @5, @10, @20, and @100, plus MRR@10 and hit
 rate@$K$. The deeper cutoffs are not decoration: Recall@100 is the ceiling that
 reranking cannot exceed, and the gap between Recall@100 and Recall@10 is the
 headroom the adaptive policy is trying to convert into quality, so both are
@@ -426,7 +425,7 @@ $\ldots$ name the LLM and how you will access it $\ldots$ and the compute
 platform for GPU embedding and reranking.''} Addressed. BM25 is our own
 implementation rather than a library; the dense encoder is
 \texttt{BAAI/bge-m3} with FAISS \texttt{IndexFlatIP}; the cross-encoder is
-\texttt{cross-encoder/ms-marco-MiniLM-L6-v2} over a fixed pool of 50 fused
+\texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2} over a fixed pool of 50 fused
 candidates; answer generation uses \texttt{qwen3:8b} from the Qwen3 family,
 served locally with Ollama at temperature 0 with one fixed prompt for all five
 configurations, which keeps the generator identical across systems and avoids
