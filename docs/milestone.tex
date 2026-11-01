@@ -231,12 +231,16 @@ warm-up, which if anything favors BM25 in the table below.
 
 \subsection{Results}
 
-\begin{table}[h]
+Table~\ref{tab:results} reports both baselines. Table~\ref{tab:overlap} reports
+how often each one finds gold evidence that the other misses.
+
+\begin{table}[tb]
 \centering
 \small
 \caption{Retrieval quality on the QASPER train split, paragraph-level credit over
 1{,}836 eligible questions. Both systems use the identical corpus, chunking, and
 query set.}
+\label{tab:results}
 \begin{tabular}{@{}lrr@{}}
 \toprule
 \textbf{Metric} & \textbf{BM25} & \textbf{Dense (bge-m3)} \\
@@ -256,21 +260,44 @@ Latency p95 (ms) & \textbf{17.76} & 24.94 \\
 \end{tabular}
 \end{table}
 
+\begin{table}[tb]
+\centering
+\small
+\caption{Agreement between the two baselines over the 1{,}836 eligible
+questions. Overlap is the mean Jaccard similarity of the retrieved paragraph
+sets; the hit columns are the fraction of questions for which that system, and
+only that system, retrieves gold evidence.}
+\label{tab:overlap}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+ & \textbf{Over-} & \textbf{Both} & \textbf{BM25} & \textbf{Dense} & \textbf{Nei-} \\
+\textbf{Depth} & \textbf{lap} & \textbf{hit} & \textbf{only} & \textbf{only} & \textbf{ther} \\
+\midrule
+$k = 10$  & 0.099 & 0.127 & 0.044 & 0.100 & 0.729 \\
+$k = 100$ & 0.098 & 0.279 & 0.063 & 0.123 & 0.535 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Discussion}
 
 Dense retrieval leads BM25 on every quality metric, and the margin is widest
 where it matters most. At $k = 1$ dense retrieval is $2.3\times$ better; by
 $k = 100$ the ratio has fallen to $1.19\times$. MRR@10 shows the same shape, at
-$1.57\times$. The two systems are therefore not finding very different evidence
-so much as ordering it differently: BM25's lexical signal does locate relevant
-paragraphs, but it buries them deeper in the ranking. This is the single most
-useful finding for our proposed method. An adaptive reranker cannot recover
-evidence that is absent from the candidate pool, so Recall@100 bounds what
-reranking can achieve --- 0.3481 for dense, 0.2924 for BM25 --- while the gap
-between Recall@100 and Recall@10 is the headroom a reranker can actually
-exploit. For dense retrieval that headroom is 0.157 absolute, which is larger
-than Recall@10 itself. Reranking is worth doing, and fusing the two candidate
-pools should raise the ceiling further.
+$1.57\times$. An adaptive reranker cannot recover evidence that is absent from
+the candidate pool, so Recall@100 bounds what reranking can achieve --- 0.3481
+for dense, 0.2924 for BM25 --- and the gap between Recall@100 and Recall@10,
+0.157 absolute for dense, is the part a reranker could still convert.
+
+The aggregate table does not say whether the two systems find the same evidence,
+so we measured that separately (Table~\ref{tab:overlap}). They do not: the mean
+Jaccard overlap of their retrieved paragraph sets is 0.099 at $k = 10$ and 0.098
+at $k = 100$, so the two candidate pools are close to disjoint. They also fail on
+different questions. At $k = 10$, BM25 alone finds gold evidence for 4.4\% of
+questions and dense alone for 10.0\%, and at $k = 100$ the union of the two pools
+contains gold evidence for 46.5\% of questions against 40.2\% for dense alone.
+Fusion therefore has a measurable ceiling to work with before any reranking, and
+a 181-paragraph union pool to draw it from.
 
 The cost side of the trade is visible too. Dense retrieval is $2.5\times$ slower
 at the median, entirely because every query must be encoded; BM25 does no neural
@@ -285,8 +312,8 @@ Each question is answered against all 888 papers with no same-paper filter, so a
 system must first find the right paper among 50{,}189 chunks. QASPER questions
 are also written by readers of a specific paper and are frequently generic in
 isolation --- ``which baselines did they compare against'' --- which gives a
-lexical retriever little to work with across papers. We expect this to be where
-hybrid fusion helps most, since the two retrievers fail on different questions.
+lexical retriever little to work with across papers. Table~\ref{tab:overlap} is
+why we expect fusion to help here.
 
 Two implementation challenges are worth recording. First, the proposal's
 intended dense encoder, \texttt{all-MiniLM-L6-v2}, accepts 512 tokens, while our
@@ -403,10 +430,9 @@ overlapping chunks of a single gold paragraph were credited as multiple pieces
 of evidence. Since QASPER's annotations are paragraph-level, paragraph-level
 credit is the measurement the annotations actually support.
 
-\paragraph{Metric depth} Added after seeing the baseline numbers. With dense
-Recall@10 at 0.1915 and Recall@100 at 0.3481, the headroom available to
-reranking is larger than the quality already achieved, which is a central fact
-about our method and would have been invisible at the proposal's cutoffs.
+\paragraph{Metric depth} Added after seeing the baseline numbers. Recall@100 is
+the ceiling reranking cannot exceed, and at the proposal's cutoffs we could not
+have seen it.
 
 \subsection{Response to Proposal Feedback}
 
@@ -464,10 +490,9 @@ no shared-cluster queue sits on our critical path.
 \subsection{Remaining Risks}
 
 \paragraph{Risk 1: the adaptive policy may not beat always reranking, or dense
-retrieval alone, by a useful margin.} The baselines leave real headroom --- dense
-Recall@10 is 0.1915 against Recall@100 of 0.3481 --- but a cross-encoder has to
-convert that headroom into ranking quality, and the confidence signals have to
-identify the queries where reranking pays. Either step can fail. The policy is
+retrieval alone, by a useful margin.} A cross-encoder has to convert the gap
+between Recall@10 and Recall@100 into ranking quality, and the confidence signals
+have to identify the queries where reranking pays. Either step can fail. The policy is
 also only interesting if it skips a meaningful share of queries while giving up
 little quality; a policy that reranks 95\% of queries is not a contribution.
 
