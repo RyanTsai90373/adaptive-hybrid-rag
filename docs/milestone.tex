@@ -4,9 +4,10 @@
 % milestone instructions request.
 %
 % TODO before submitting:
-%   1. Confirm the Division of Work table against what each member actually did.
-%   2. Confirm who owns the reranking and adaptive-policy component (Member 3).
-%   3. Compile with pdflatex twice so the references resolve.
+%   1. Compile with pdflatex twice so the references resolve. This file has not
+%      been compiled yet.
+%   2. Answer generation currently names qwen3:8b served with Ollama; change
+%      Sections 3.1 and 3.3 together if the team picks a different model.
 
 \documentclass[sigconf,nonacm]{acmart}
 
@@ -107,23 +108,25 @@ expected.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}llp{2.9cm}@{}}
+\begin{tabular}{@{}llp{2.6cm}@{}}
 \toprule
-\textbf{Member} & \textbf{Proposal role} & \textbf{Completed work} \\
+\textbf{Member} & \textbf{Role} & \textbf{Completed work} \\
 \midrule
-Yu-An Chen & Data and Preprocessing & Repository setup, QASPER parsing and chunking, evidence mapping, preprocessing documentation, exploratory data analysis \\
-Wei-Po Lin & Retrieval and Indexing & BM25 index construction and retrieval, sparse pipeline tests \\
-Siang-Yu Cheng & Retrieval and Indexing & Dense embedding generation, FAISS index construction, dense retrieval \\
-You-Hsiang Tsai & Evaluation and Generation & Evaluation harness, retrieval metrics, latency measurement, baseline experiment runs, result analysis, reproducibility manifests \\
+1. Yu-An Chen & Data and Preprocessing & Repository setup, QASPER parsing and chunking, evidence mapping, preprocessing documentation, exploratory data analysis \\
+2. Wei-Po Lin & Retrieval and Indexing & BM25 index construction and retrieval, sparse pipeline tests \\
+3. Siang-Yu Cheng & Reranking and Adaptive Policy & Dense embedding generation, FAISS index construction, dense retrieval \\
+4. You-Hsiang Tsai & Evaluation and Generation & Evaluation harness, retrieval metrics, latency measurement, baseline experiment runs, result analysis, reproducibility manifests \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Relative to the proposal, the Retrieval and Indexing role was split between two
-members so that the sparse and dense baselines could be built in parallel; both
-members jointly own RRF fusion. The reranking and adaptive-policy component has
-not started and begins in the schedule given below.
-% TODO: name the member who owns the reranking and adaptive policy component.
+The roles are those assigned in the proposal, with one scheduling adjustment.
+Both required baselines were built in parallel: Member~2 implemented sparse
+retrieval while Member~3 implemented dense retrieval, rather than Member~2
+building both in sequence. This brought the milestone's hard requirement forward
+and let evaluation begin earlier. Member~3 now moves to the reranking and
+adaptive policy that the proposal assigns to that role, and Members~2 and~3
+jointly own RRF fusion, which sits between their two components.
 
 \subsection{Progress Assessment and Remaining Work}
 
