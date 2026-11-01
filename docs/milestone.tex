@@ -4,15 +4,22 @@
 % milestone instructions request.
 %
 % TODO before submitting:
-%   1. Compile with pdflatex twice so the references resolve. This file has not
-%      been compiled yet.
-%   2. Answer generation currently names qwen3:8b served with Ollama; change
+%   1. Answer generation currently names qwen3:8b served with Ollama; change
 %      Sections 3.1 and 3.3 together if the team picks a different model.
+%
+% Verified with tectonic 0.17 (XeTeX): 5 pages, no errors, no overfull hbox.
 
 \documentclass[sigconf,nonacm]{acmart}
 
-\usepackage{changes}
+% commandnameprefix=ifneeded: acmart already defines \comment, which changes
+% would otherwise redefine and abort on.
+\usepackage[commandnameprefix=ifneeded]{changes}
 \usepackage{booktabs}
+\usepackage{array}
+% Long identifiers and a narrow two-column measure leave TeX no good break;
+% let it stretch the spaces rather than overrun the column.
+\setlength{\emergencystretch}{3em}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \begin{document}
 
@@ -47,7 +54,7 @@ not started.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}p{2.5cm}p{1.5cm}p{3.4cm}@{}}
+\begin{tabular}{@{}L{2.5cm}L{1.5cm}L{3.4cm}@{}}
 \toprule
 \textbf{Component} & \textbf{Status} & \textbf{Notes} \\
 \midrule
@@ -107,7 +114,7 @@ expected.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}p{2.3cm}p{2.0cm}p{3.1cm}@{}}
+\begin{tabular}{@{}L{2.3cm}L{2.0cm}L{3.1cm}@{}}
 \toprule
 \textbf{Member} & \textbf{Role} & \textbf{Completed work} \\
 \midrule
@@ -308,23 +315,17 @@ specified precisely.
 
 \paragraph{Components reused}
 \begin{itemize}
-\item \deleted{BM25 implementation e.g.\ \texttt{rank-bm25}}
-      \added{BM25 implemented by us directly, Python standard library
+\item \deleted{BM25 implementation e.g.\ \texttt{rank-bm25}} $\rightarrow$ \added{BM25 implemented by us directly, Python standard library
       only, $k_1 = 1.5$, $b = 0.75$}
-\item \deleted{pretrained model for dense retrieval e.g.\
-      \texttt{sentence-transformers/\allowbreak all-MiniLM-L6-v2}}
-      \added{dense encoder \texttt{BAAI/bge-m3}, 1024 dimensions,
+\item \deleted{pretrained dense model e.g.\ all-MiniLM-L6-v2} $\rightarrow$ \added{dense encoder \texttt{bge-m3}, 1024 dimensions,
       8{,}192-token limit}
-\item \deleted{similarity search e.g.\ FAISS}
-      \added{FAISS \texttt{IndexFlatIP} over normalized vectors, exact
+\item \deleted{similarity search e.g.\ FAISS} $\rightarrow$ \added{FAISS \texttt{IndexFlatIP} over normalized vectors, exact
       cosine search, no approximation}
 \item \deleted{cross-encoder e.g.\
-      \texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2}}
-      \added{cross-encoder \texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2},
-      applied to a fixed candidate pool of the top 50 fused chunks}
+      \texttt{ms-marco-MiniLM-L6-v2}} $\rightarrow$ \added{cross-encoder \texttt{ms-marco-MiniLM-L6-v2}, applied to a fixed
+      candidate pool of the top 50 fused chunks}
 \item \deleted{LLM for answer generation e.g.\ OpenAI API using a fixed
-      ChatGPT model}
-      \added{answer generation by \texttt{qwen3:8b} from the Qwen3
+      ChatGPT model} $\rightarrow$ \added{answer generation by \texttt{qwen3:8b} from the Qwen3
       family, served locally with Ollama, temperature 0, one fixed prompt across
       all configurations}
 \item \added{compute platform: one Apple Silicon laptop, 32~GB unified
@@ -425,7 +426,7 @@ $\ldots$ name the LLM and how you will access it $\ldots$ and the compute
 platform for GPU embedding and reranking.''} Addressed. BM25 is our own
 implementation rather than a library; the dense encoder is
 \texttt{BAAI/bge-m3} with FAISS \texttt{IndexFlatIP}; the cross-encoder is
-\texttt{cross-encoder/\allowbreak ms-marco-\allowbreak MiniLM-L6-v2} over a fixed pool of 50 fused
+\texttt{cross-encoder/\allowbreak ms-marco-MiniLM-L6-v2} over a fixed pool of 50 fused
 candidates; answer generation uses \texttt{qwen3:8b} from the Qwen3 family,
 served locally with Ollama at temperature 0 with one fixed prompt for all five
 configurations, which keeps the generator identical across systems and avoids
