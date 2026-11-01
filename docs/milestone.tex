@@ -48,8 +48,8 @@
 
 \subsection{Implementation Progress}
 
-We break the project into eight components. Five are complete and three have
-not started.
+We break the project into nine components. Five are complete and four have not
+started.
 
 \begin{table}[h]
 \centering
@@ -65,6 +65,7 @@ Dense retrieval         & Complete    & \texttt{BAAI/bge-m3} embeddings, FAISS e
 Retrieval evaluation    & Complete    & Recall@K, MRR, hit rate, latency; reproducibility manifests \\
 RRF hybrid fusion       & Not started & Next component \\
 Adaptive reranking      & Not started & Cross-encoder plus confidence gating \\
+Secondary benchmark     & Not started & BEIR-SciFact preparation \\
 Answer generation       & Not started & QA accuracy is a secondary metric \\
 \bottomrule
 \end{tabular}
@@ -135,6 +136,7 @@ adaptive policy that the proposal assigns to that role, and Members~2 and~3
 jointly own RRF fusion, which sits between their two components.
 
 \subsection{Progress Assessment and Remaining Work}
+\label{sec:plan}
 
 Measured against what our proposal committed to deliver by the milestone --- a
 working preprocessing pipeline, both required baselines, and preliminary
@@ -226,8 +228,9 @@ reranking and no query rewriting.
 
 \paragraph{Hardware} One Apple Silicon laptop, 10 CPU cores, 32~GB unified
 memory, PyTorch 2.15 on the Metal backend. Embedding all 50{,}189 chunks took
-37.6~minutes. Dense latency is measured after a warm-up query; BM25 has no
-warm-up, which if anything favors BM25 in the table below.
+37.6~minutes. Dense latency is measured after a warm-up query while BM25 has
+none, so the asymmetry favors dense; it applies to one query out of 2{,}593 and
+cannot move the reported medians or 95th percentiles.
 
 \subsection{Results}
 
@@ -281,13 +284,15 @@ $k = 100$ & 0.098 & 0.279 & 0.063 & 0.123 & 0.535 \\
 
 \subsection{Discussion}
 
-Dense retrieval leads BM25 on every quality metric, and the margin is widest
-where it matters most. At $k = 1$ dense retrieval is $2.3\times$ better; by
-$k = 100$ the ratio has fallen to $1.19\times$. MRR@10 shows the same shape, at
-$1.57\times$. An adaptive reranker cannot recover evidence that is absent from
-the candidate pool, so Recall@100 bounds what reranking can achieve --- 0.3481
-for dense, 0.2924 for BM25 --- and the gap between Recall@100 and Recall@10,
-0.157 absolute for dense, is the part a reranker could still convert.
+Dense retrieval leads BM25 on every quality metric. At $k = 1$ dense retrieval
+is $2.3\times$ better; by $k = 100$ the ratio has fallen to $1.19\times$. MRR@10
+sits at $1.57\times$.
+
+A reranker cannot recover evidence absent from the pool it is given, so the
+ceiling for our pipeline is the recall of the candidate pool we actually rerank,
+which the proposal fixes at 50 chunks --- not Recall@100. At a 50-chunk budget
+the paragraph-level hit rate is 0.342 for dense and 0.290 for BM25, against
+0.402 and 0.343 at 100 chunks.
 
 The aggregate table does not say whether the two systems find the same evidence,
 so we measured that separately (Table~\ref{tab:overlap}). They do not: the mean
@@ -296,12 +301,21 @@ at $k = 100$, so the two candidate pools are close to disjoint. They also fail o
 different questions. At $k = 10$, BM25 alone finds gold evidence for 4.4\% of
 questions and dense alone for 10.0\%, and at $k = 100$ the union of the two pools
 contains gold evidence for 46.5\% of questions against 40.2\% for dense alone.
-Fusion therefore has a measurable ceiling to work with before any reranking, and
-a 181-paragraph union pool to draw it from.
+
+That union, however, spans 181 paragraphs, and our pipeline reranks 50 chunks.
+Splitting a 50-chunk budget evenly between the two retrievers reaches 0.345 ---
+indistinguishable from dense alone at the same budget, 0.342, and well short of
+the 0.465 the full union reaches. Two consequences follow, and both cut against
+the plan in Section~\ref{sec:plan}. Fusion has to earn its gain through ranking
+rather than through pool coverage, since at a fixed budget it does not see more
+gold than dense alone. And the pool size we fixed at 50 discards roughly a
+quarter of the gold that 100 chunks reach, which makes the candidate-pool sweep
+we dropped from scope the experiment most worth restoring.
 
 The cost side of the trade is visible too. Dense retrieval is $2.5\times$ slower
-at the median, entirely because every query must be encoded; BM25 does no neural
-work at query time. Dense latency is also far more predictable: its p95/p50 ratio
+at the median. Query encoding accounts for 92\% of that: on 200 queries the
+median encode takes 21.8~ms against 1.8~ms for the index search. BM25 does no
+neural work at query time. Dense latency is also far more predictable: its p95/p50 ratio
 is 1.05 against BM25's 1.90, since BM25's cost scales with how many postings
 lists a query touches. This is exactly the regime our adaptive policy targets, and
 it tells us the policy should be judged on cross-encoder invocations avoided
@@ -392,10 +406,10 @@ sampling is involved, so no seed is needed.}
 \paragraph{Metrics}
 \deleted{We will report Recall@1, Recall@5, and Recall@10.}
 \added{We report Recall@1, @5, @10, @20, and @100, plus MRR@10 and hit
-rate@$K$. The deeper cutoffs are not decoration: Recall@100 is the ceiling that
-reranking cannot exceed, and the gap between Recall@100 and Recall@10 is the
-headroom the adaptive policy is trying to convert into quality, so both are
-needed to interpret our own method. Latency percentiles are recomputed by the
+rate@$K$. The deeper cutoffs bound what reranking can reach: a reranker only
+reorders the pool it is given, so pool recall at the budget we rerank is the
+ceiling, and the gap between it and Recall@10 is what the adaptive policy can
+convert. Latency percentiles are recomputed by the
 evaluator with one nearest-rank estimator across all systems.}
 
 \subsection{Justification of Changes}
@@ -430,9 +444,9 @@ overlapping chunks of a single gold paragraph were credited as multiple pieces
 of evidence. Since QASPER's annotations are paragraph-level, paragraph-level
 credit is the measurement the annotations actually support.
 
-\paragraph{Metric depth} Added after seeing the baseline numbers. Recall@100 is
-the ceiling reranking cannot exceed, and at the proposal's cutoffs we could not
-have seen it.
+\paragraph{Metric depth} Added after seeing the baseline numbers. Pool recall at
+the depth we rerank is the ceiling on the whole pipeline, and at the proposal's
+cutoffs we could not have measured it.
 
 \subsection{Response to Proposal Feedback}
 
